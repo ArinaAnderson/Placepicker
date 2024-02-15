@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import Places from './Places.jsx';
+import Error from './Error.jsx';
+import { sortPlacesByDistance } from '../loc.js';
 
 export default function AvailablePlaces({ onSelectPlace }) {
   const [places, setPlaces] = useState([]);
@@ -8,49 +10,32 @@ export default function AvailablePlaces({ onSelectPlace }) {
   const [loadingStatus, setLoadingStatus] = useState('ok');
   const [errorMessage, setErrorMessage] = useState(null);
 
-  useEffect(() => {
-    const fetchAllPlaces = async () => {
-      setIsLoading(true);
+  const fetchAllPlaces = async () => {
+    setIsLoading(true);
+    try {
       const availablePlacesData = await axios('http://localhost:3000/places');
       const availablePlaces = availablePlacesData.data;
-      setPlaces(availablePlaces.places);
+    
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          console.log('PLACES', availablePlaces.places);
+          setPlaces(sortPlacesByDistance(availablePlaces.places, latitude, longitude));
+          setIsLoading(false);
+        }
+      );
+      
+      // setPlaces(availablePlaces.places)
+    } catch(e) {
+      setErrorMessage(e.message);
       setIsLoading(false);
-      };
-      fetchAllPlaces();
-      // try {
-        // setIsLoading(true);
-        // setLoadingStatus('loading');
-        // const availablePlacesData = await fetch('http://localhost:3000/places');
-        // const availablePlaces = await availablePlacesData.json();
-        // console.log('BASYA!!', availablePlaces.places);
+    }
+    // setIsLoading(false);
+  };
 
-        // setPlaces(availablePlaces.places);
-        // setLoadingStatus('ok');
-        // setIsLoading(false);
-      /* } catch(e) {
-        setErrorMessage(e.message);
-        console.log('ERROR');
-        setIsLoading(false);
-        setLoadingStatus('error');
-      }
-      */
-  }, []);
-
- /*
   useEffect(() => {
-    setIsLoading(true);
-    setLoadingStatus('loading');
-    axios.get('http://localhost:3000/places')
-      .then((response) => {
-        setIsLoading(false);
-        setPlaces(response.data.places);
-        
-      })
-      .catch((error) => {
-        setErrorMessage(error.message);
-      })
-  });
-  */
+    fetchAllPlaces();
+  }, []);
 
   const renderFeedback = (loadingStatus) => {
     if (loadingStatus === 'loading' || loadingStatus === 'ok') {
@@ -71,6 +56,21 @@ export default function AvailablePlaces({ onSelectPlace }) {
       return <h1>{errorMessage}</h1>
     }
   };
+
+  if (errorMessage !== null) {
+    console.log(places)
+    const errorMessageValidated = errorMessage ? errorMessage : 'Could not fetch places, please try again';
+    return <Error
+      title='An error occured!'
+      message={errorMessageValidated}
+      onConfirm={() => setErrorMessage(null)}
+      sendRequest={() => {
+        setErrorMessage(null)
+        fetchAllPlaces();
+      }}
+    />
+  }
+
   return (
     <Places
       title="Available Places"
@@ -82,52 +82,3 @@ export default function AvailablePlaces({ onSelectPlace }) {
     />
   );
 }
-
-/*
-useEffect(() => {
-    const fetchAllPlaces = async () => {
-      setIsLoading(true);
-      setLoadingStatus('loading');
-      const availablePlacesData = await fetch('http://localhost:3000/place');
-      const availablePlaces = await availablePlacesData.json();
-      setPlaces(availablePlaces.places);
-      setIsLoading(false);
-      setLoadingStatus('ok');
-    };
-    try {
-      // setIsLoading(true);
-      fetchAllPlaces();
-      
-    } catch(e) {
-      setLoadingStatus('error');
-      setErrorMessage(e.message)
-    }
-    
-  }, []);
-*/
-
-
-/*
-useEffect(() => {
-    const fetchAllPlaces = async () => {
-      try {
-        setIsLoading(true);
-        // setLoadingStatus('loading');
-        const availablePlacesData = await axios('http://localhost:3000/places');
-        const availablePlaces = availablePlacesData.data;
-        console.log(availablePlaces.places);
-
-        setPlaces(availablePlaces.places);
-        // setLoadingStatus('ok');
-        setIsLoading(false);
-      } catch(e) {
-        setErrorMessage(e.message);
-        console.log('ERROR');
-        setIsLoading(false);
-        setLoadingStatus('error');
-      }
-
-      fetchAllPlaces();
-    };
-  }, []);
-*/
