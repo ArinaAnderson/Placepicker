@@ -22,6 +22,13 @@ export default function AvailablePlaces({ onSelectPlace }) {
           console.log('PLACES', availablePlaces.places);
           setPlaces(sortPlacesByDistance(availablePlaces.places, latitude, longitude));
           setIsLoading(false);
+        },
+        (e) => {
+          if (e.code == e.PERMISSION_DENIED) {
+            console.log('DENIED');
+          }
+          setPlaces(availablePlaces.places);
+          setIsLoading(false);
         }
       );
       
